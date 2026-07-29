@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from core.generation import generate_response
 from intent_routing.needs_retrieval import handle_retrieval
 from intent_routing.needs_web import web_search
+from intent_routing.needs_tool import handle_tool
+
 app = FastAPI()
 sessions={}
 last_5_conversation_history=[]
@@ -23,14 +25,26 @@ def classify_intent(query,prev_intent):
     
     system_prompt = (
             "You are an expert intent classification routing agent. "
-            "Your job is to analyze a user query and output EXACTLY one of these four tags: "
-            "[needs_retrieval, needs_web, chat, direct_answer]. "
+            "Your job is to analyze a user query and output EXACTLY one of these five tags: "
+            "[needs_retrieval, needs_web, chat, direct_answer, needs_tool]. "
             "Do not include any other text, explanation, or punctuation."
         )
         
     prompt = f"""Classify the user query into one of the following intents:
     - needs_retrieval: If the user asks about personal documents, uploaded files, or private data.
     - needs_web: If the user asks about real-time events, weather, news, or things requiring a Google search.
+    - needs_tool: If the user wants to perform a local action — open an application, read/inspect a local file, list a directory, set a reminder, or anything requiring interaction with the local system rather than the internet or stored documents.
+
+    Examples:
+    Query: Open Firefox for me
+    Intent: needs_tool
+
+    Query: How many lines does report.txt have?
+    Intent: needs_tool
+
+    Query: List what's in my downloads folder
+    Intent: needs_tool
+    
     - chat: If it's a greeting, casual banter, or small talk.
     - direct_answer: If it's a general knowledge question, logic puzzle, or creative task that requires no external data.
 
@@ -128,6 +142,12 @@ def chat(request: ChatRequest):
         result ={"response":response_text,
                  "intent":intent}
         update_session(session=session,session_id=request.session_id,query=request.query,intent=intent,result=response_text)
+        return result
+    
+    elif intent=="needs_tool":
+        response_text = handle_tool(request.query)
+        result = {"response": response_text, "intent": intent}
+        update_session(session=session, session_id=request.session_id, query=request.query, intent=intent, result=response_text)
         return result
     
     return {"message":"did not understand could you clarify your intent."}
