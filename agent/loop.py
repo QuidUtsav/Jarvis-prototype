@@ -88,4 +88,4 @@ def run_agent_loop(query, history=None, max_turns=8):
         messages.append({"role": "user", "content": f"Tool result: {result}"})
         turn += 1
 
-    return "I wasn't able to complete this within the allowed steps."
+    return "model couldnt complete within the allowed steps."
