@@ -46,7 +46,17 @@ def parse_agent_response(response):
     if action is None or action_input_raw is None:
         raise ValueError(f"Could not find action/action_input in response: {content}")
 
-    action_input = json.loads(action_input_raw)
+    try:
+        action_input = json.loads(action_input_raw)
+    except json.JSONDecodeError:
+        # attempt to extract the first JSON object
+        start = action_input_raw.find("{")
+        end = action_input_raw.rfind("}")
+
+        if start == -1 or end == -1:
+            raise
+
+        action_input = json.loads(action_input_raw[start:end + 1])
 
     if action == "call_tool":
         return "call_tool", action_input["tool_name"], action_input["tool_args"]
@@ -72,7 +82,6 @@ def run_agent_loop(query, history=None, max_turns=8):
 
         if status == "final_answer":
             return value
-
         tool_name = value
         tool_args = args
 
@@ -82,7 +91,11 @@ def run_agent_loop(query, history=None, max_turns=8):
             try:
                 result = AVAILABLE_TOOLS[tool_name](**tool_args)
             except Exception as e:
-                result = json.dumps({"error": str(e)})
+                print("========== RAW MODEL OUTPUT ==========")
+                print(response.choices[0].message.content)
+                print("========== ERROR ==========")
+                print(repr(e))
+                return f"I hit an error trying to process that step: {e}"
 
         messages.append({"role": "assistant", "content": response.choices[0].message.content})
         messages.append({"role": "user", "content": f"Tool result: {result}"})

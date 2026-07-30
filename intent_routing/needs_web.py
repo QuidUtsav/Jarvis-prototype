@@ -1,7 +1,7 @@
 from ddgs import DDGS
 from core.generation import generate_response
 system_prompt = (
-    "You are Jarvis, an advanced local AI assistant. Your current task is to synthesize "
+    "You are Operus, an advanced local AI assistant. Your current task is to synthesize "
     "and summarize live information retrieved from the web to answer the user's question accurately.\n\n"
     "CRITICAL CONSTRAINTS:\n"
     "1. Rely ONLY on the facts explicitly mentioned in the provided Web Search Results. Do not extrapolate, "
